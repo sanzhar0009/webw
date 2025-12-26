@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Запомни предметы</title>
+
+<style>
+body {
+    margin: 0;
+    background: #222;
+    color: white;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+}
+
+.game {
+    margin-top: 20px;
+    background: #333;
+    padding: 20px;
+    border-radius: 15px;
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+}
+
+h1 {
+    margin-bottom: 10px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.card {
+    background: #555;
+    border-radius: 10px;
+    height: 70px;
+    font-size: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.card.open {
+    background: #4caf50;
+}
+
+.card.matched {
+    background: #2196f3;
+    cursor: default;
+}
+</style>
+</head>
+
+<body>
+
+<div class="game">
+    <h1>🧠 Запомни предметы</h1>
+    <div class="grid" id="grid"></div>
+</div>
+
+<script>
+const icons = ["🍎","🍌","🍇","🍓","🍉","🍒","🍍","🥝"];
+let cards = [...icons, ...icons];
+let first = null;
+let second = null;
+let lock = false;
+let matched = 0;
+
+const grid = document.getElementById("grid");
+
+function speak(text) {
+    speechSynthesis.cancel();
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.lang = "ru-RU";
+    msg.rate = 0.9;
+    speechSynthesis.speak(msg);
+}
+
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
+function createBoard() {
+    shuffle(cards);
+    grid.innerHTML = "";
+
+    cards.forEach(icon => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.textContent = "❓";
+
+        card.addEventListener("click", () => flip(card, icon));
+        grid.appendChild(card);
+    });
+
+    // показать все на 2 секунды
+    setTimeout(() => {
+        document.querySelectorAll(".card").forEach((c, i) => {
+            c.textContent = cards[i];
+        });
+        setTimeout(hideAll, 2000);
+    }, 300);
+}
+
+function hideAll() {
+    document.querySelectorAll(".card").forEach(c => {
+        if (!c.classList.contains("matched")) {
+            c.textContent = "❓";
+        }
+    });
+}
+
+function flip(card, icon) {
+    if (lock || card.classList.contains("matched") || card === first) return;
+
+    card.textContent = icon;
+    card.classList.add("open");
+
+    if (!first) {
+        first = card;
+    } else {
+        second = card;
+        lock = true;
+
+        if (first.textContent === second.textContent) {
+            first.classList.add("matched");
+            second.classList.add("matched");
+            matched += 2;
+            speak("Правильно");
+            reset();
+
+            if (matched === cards.length) {
+                setTimeout(() => speak("Молодец! Ты победил"), 500);
+            }
+        } else {
+            speak("Ошибка");
+            setTimeout(() => {
+                first.textContent = "❓";
+                second.textContent = "❓";
+                first.classList.remove("open");
+                second.classList.remove("open");
+                reset();
+            }, 900);
+        }
+    }
+}
+
+function reset() {
+    first = null;
+    second = null;
+    lock = false;
+}
+
+createBoard();
+</script>
+
+</body>
+</html>
